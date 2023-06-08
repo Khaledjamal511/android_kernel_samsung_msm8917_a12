@@ -1,27 +1,36 @@
-name: Makefile CI
+name: Build on Tag
 
 on:
   push:
-    branches: [ "lineage-19" ]
-  pull_request:
-    branches: [ "lineage-19" ]
+    tags: '*'
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout kernel source
+      uses: actions/checkout@v2
 
-    - name: configure
-      run: ./configure
+    - name: Checkout zipper
+      uses: actions/checkout@v2
+      with:
+        repository: lemniskett/AnyKernel3
+        path: zipper
 
-    - name: Install dependencies
-      run: make
+    - name: Android kernel build
+      uses: lemniskett/android-kernel-actions@master
+      id: build
+      env:
+        NAME: Dark-Ages-Último
+      with:
+        arch: arm64
+        compiler: gcc/10
+        defconfig: vince_defconfig
+        image: Image.gz-dtb
 
-    - name: Run check
-      run: make check
-
-    - name: Run distcheck
-      run: make distcheck
+    - name: Release build
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: ${{ steps.build.outputs.outfile }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
